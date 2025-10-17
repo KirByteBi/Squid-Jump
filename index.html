@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <link rel="icon" type="image/png" href="SJicon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Squid Jump</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+        body { 
+            background: #0a1224; 
+            font-family: 'Arial', sans-serif; 
+            overflow: hidden; 
+            color: white; 
+            height: 100vh; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+        }
+        #gameContainer {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            overflow: hidden;
+            border: 3px solid #00ff88;
+            border-radius: 10px;
+        }
+        canvas { display: block; background: #0a1224; }
+        .screen {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(10, 18, 36, 0.95);
+            z-index: 10;
+            text-align: center;
+            padding: 20px;
+        }
+        .hidden { display: none; }
+        h1 { 
+            font-size: 3em; 
+            margin-bottom: 20px; 
+            color: #00ff88;
+            text-shadow: 0 0 10px #00ff88;
+        }
+        p { 
+            font-size: 1.2em; 
+            margin-bottom: 15px;
+            color: #cccccc;
+        }
+        button { 
+            padding: 12px 25px; 
+            border: none; 
+            border-radius: 8px; 
+            background: #00ff88; 
+            color: #000; 
+            cursor: pointer; 
+            font-weight: bold; 
+            margin: 8px;
+            font-size: 1.1em;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: #00cc66;
+            transform: scale(1.05);
+        }
+        #hud {
+            position: absolute;
+            top: 20px; left: 20px;
+            font-size: 24px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px 15px;
+            border-radius: 8px;
+            color: #00ff88;
+            font-weight: bold;
+            z-index: 5;
+            border: 2px solid #00ff88;
+        }
+        #finalScore {
+            font-size: 2.5em;
+            color: #00ff88;
+            margin: 15px 0;
+            text-shadow: 0 0 10px #00ff88;
+        }
+        .game-icon {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 20px;
+            border-radius: 20px;
+            border: 2px solid #00ff88;
+        }
+        .credits {
+            position: absolute;
+            bottom: 10px;
+            width: 90%;
+            font-size: 0.7em;
+            color: #888;
+            text-align: center;
+            line-height: 1.3;
+            padding: 10px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 8px;
+        }
+        .lang-btn {
+            background: #ffaa00 !important;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div id="hud">0 m</div>
+        
+        <div id="startScreen" class="screen">
+            <img src="SJicon.png" alt="Squid Jump" class="game-icon">
+            <h1 data-en="🦑 SQUID JUMP" data-es="🦑 SQUID JUMP">🦑 SQUID JUMP</h1>
+            <p data-en="Jump from platform to platform" data-es="Salta de plataforma en plataforma">Jump from platform to platform</p>
+            <p data-en="Avoid the rising ink!" data-es="¡Evita que la tinta te alcance!">Avoid the rising ink!</p>
+            <button id="startBtn" data-en="START GAME" data-es="EMPEZAR JUEGO">START GAME</button>
+            <button id="langBtn" class="lang-btn">ES</button>
+            
+            <div class="credits" data-en="This HTML game is not by KirByte nor does it have the rights. These belong to Nintendo and Splatoon. All rights are theirs. With this I only intended to create a copy to play WITHIN Splatoon 2, so it may be taken down. My apologies if this intends to steal things from Splatoon, because it is not. Thank you very much, Kirb" 
+                 data-es="Este juego html no es de KirByte ni tiene los derechos. Estos son de Nintendo y de Splatoon. Todos los derechos son suyos. Con esto solo pretendí crear una copia para jugar DENTRO del Splatoon 2, por lo que puede ser tumbado. Mis disculpas si esto pretende robar cosas de Splatoon, porque no es así. Muchas gracias, Kirb">
+                This HTML game is not by KirByte nor does it have the rights. These belong to Nintendo and Splatoon. All rights are theirs. With this I only intended to create a copy to play WITHIN Splatoon 2, so it may be taken down. My apologies if this intends to steal things from Splatoon, because it is not. Thank you very much, Kirb
+            </div>
+        </div>
+        
+        <div id="gameOver" class="screen hidden">
+            <h1 data-en="GAME OVER!" data-es="¡GAME OVER!">GAME OVER!</h1>
+            <p data-en="The ink caught you!" data-es="¡La tinta te alcanzó!">The ink caught you!</p>
+            <div id="finalScore">0 m</div>
+            <button id="restartBtn" data-en="PLAY AGAIN" data-es="JUGAR DE NUEVO">PLAY AGAIN</button>
+            <button id="menuBtn" data-en="MAIN MENU" data-es="MENÚ PRINCIPAL">MAIN MENU</button>
+        </div>
+    </div>
+
+    <script>
+        // Elementos del DOM
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOver');
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const menuBtn = document.getElementById('menuBtn');
+        const langBtn = document.getElementById('langBtn');
+        const hud = document.getElementById('hud');
+        const finalScore = document.getElementById('finalScore');
+
+        // Variables del juego
+        let gameRunning = false;
+        let lastTime = 0;
+        let imagesLoaded = false;
+        let currentLanguage = 'en';
+        
+        // Jugador
+        const player = {
+            x: 400,
+            y: 400,
+            width: 48,
+            height: 48,
+            vx: 0,
+            vy: 0
+        };
+
+        // Plataformas
+        let platforms = [];
+        let liquidY = 0;
+        let score = 0;
+        let cameraY = 0;
+
+        // Constantes del juego
+        const GRAVITY = 0.5;
+        const JUMP_FORCE = -12;
+        const PLAYER_SPEED = 5;
+        const LIQUID_SPEED = 2;
+
+        // Cargar imágenes (SUELTAS EN LA MISMA CARPETA)
+        const images = {
+            squid: new Image(),
+            platform: new Image(),
+            icon: new Image()
+        };
+
+        // CAMBIÉ: "img/Squid.png" → "Squid.png"
+        images.squid.src = "Squid.png";
+        images.platform.src = "platform.png";
+        images.icon.src = "SJicon.png";
+
+        // Verificar carga de imágenes
+        let loadedCount = 0;
+        Object.values(images).forEach(img => {
+            img.onload = () => {
+                loadedCount++;
+                if (loadedCount === Object.keys(images).length) {
+                    imagesLoaded = true;
+                    console.log("Todas las imágenes cargadas");
+                    draw(); // Redibujar con las imágenes
+                }
+            };
+            img.onerror = () => {
+                console.log("Error cargando imagen:", img.src);
+                loadedCount++;
+                if (loadedCount === Object.keys(images).length) {
+                    imagesLoaded = true;
+                    draw(); // Redibujar aunque falle alguna imagen
+                }
+            };
+        });
+
+        // Cambiar idioma
+        function changeLanguage() {
+            currentLanguage = currentLanguage === 'en' ? 'es' : 'en';
+            
+            // Actualizar todos los textos
+            document.querySelectorAll('[data-en]').forEach(element => {
+                element.textContent = element.getAttribute(`data-${currentLanguage}`);
+            });
+            
+            // Actualizar botón de idioma
+            langBtn.textContent = currentLanguage === 'en' ? 'ES' : 'EN';
+        }
+
+        // Inicializar juego
+        function initGame() {
+            platforms = [];
+            
+            // Plataforma inicial
+            platforms.push({
+                x: 400,
+                y: 450,
+                width: 120,
+                height: 20
+            });
+
+            // Crear más plataformas hacia arriba
+            for (let i = 1; i < 15; i++) {
+                platforms.push({
+                    x: 400 + (Math.random() - 0.5) * 300,
+                    y: 450 - (i * 90),
+                    width: 100 + Math.random() * 60,
+                    height: 20
+                });
+            }
+
+            // Resetear jugador
+            player.x = 400;
+            player.y = 400;
+            player.vx = 0;
+            player.vy = 0;
+            
+            // Resetear líquido y puntuación
+            liquidY = 600;
+            score = 0;
+            cameraY = 0;
+            
+            hud.textContent = "0 m";
+        }
+
+        // Actualizar física
+        function update(deltaTime) {
+            if (!gameRunning) return;
+
+            // Aplicar gravedad
+            player.vy += GRAVITY;
+            player.y += player.vy;
+            player.x += player.vx;
+
+            // Límites de pantalla
+            player.x = Math.max(player.width/2, Math.min(canvas.width - player.width/2, player.x));
+
+            // Colisión con plataformas (salto automático)
+            let onPlatform = false;
+            for (let platform of platforms) {
+                if (player.vy > 0 && 
+                    player.y + player.height/2 > platform.y - platform.height/2 &&
+                    player.y + player.height/2 < platform.y + 5 &&
+                    player.x > platform.x - platform.width/2 &&
+                    player.x < platform.x + platform.width/2) {
+                    
+                    player.vy = JUMP_FORCE;
+                    player.y = platform.y - platform.height/2 - player.height/2;
+                    onPlatform = true;
+                    break;
+                }
+            }
+
+            // Mover cámara (seguir al jugador hacia arriba)
+            if (player.y - cameraY < 200) {
+                cameraY = player.y - 200;
+            }
+
+            // Mover líquido (aumenta velocidad con el tiempo)
+            liquidY -= LIQUID_SPEED + (score * 0.002);
+
+            // Generar nuevas plataformas
+            let lowestPlatform = Math.min(...platforms.map(p => p.y));
+            if (lowestPlatform - cameraY > -100) {
+                platforms.push({
+                    x: 400 + (Math.random() - 0.5) * 300,
+                    y: lowestPlatform - (80 + Math.random() * 40),
+                    width: 90 + Math.random() * 50,
+                    height: 20
+                });
+            }
+
+            // Eliminar plataformas fuera de pantalla
+            platforms = platforms.filter(p => p.y - cameraY < canvas.height + 100);
+
+            // Actualizar puntuación (basada en la altura)
+            score = Math.max(0, Math.floor(-cameraY / 10));
+            hud.textContent = score + " m";
+
+            // Game over si el líquido te alcanza
+            if (player.y + player.height/2 > liquidY) {
+                gameOver();
+            }
+        }
+
+        // Dibujar todo
+        function draw() {
+            // Fondo
+            ctx.fillStyle = '#0a1224';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Plataformas
+            platforms.forEach(platform => {
+                const screenY = platform.y - cameraY;
+                if (screenY > -50 && screenY < canvas.height + 50) {
+                    if (imagesLoaded && images.platform.complete) {
+                        // Dibujar imagen de plataforma
+                        ctx.drawImage(
+                            images.platform,
+                            platform.x - platform.width/2,
+                            screenY - platform.height/2,
+                            platform.width,
+                            platform.height
+                        );
+                    } else {
+                        // Fallback gráfico si la imagen no carga
+                        ctx.fillStyle = '#6b8b59';
+                        ctx.fillRect(
+                            platform.x - platform.width/2,
+                            screenY - platform.height/2,
+                            platform.width,
+                            platform.height
+                        );
+                    }
+                }
+            });
+
+            // Líquido
+            const liquidScreenY = liquidY - cameraY;
+            if (liquidScreenY < canvas.height) {
+                const gradient = ctx.createLinearGradient(0, liquidScreenY, 0, canvas.height);
+                gradient.addColorStop(0, '#00cc44');
+                gradient.addColorStop(1, '#008822');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, liquidScreenY, canvas.width, canvas.height - liquidScreenY);
+                
+                // Efecto de onda en la superficie
+                ctx.strokeStyle = '#00ff66';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (let x = 0; x < canvas.width; x += 15) {
+                    const wave = Math.sin(x * 0.05 + Date.now() * 0.005) * 5;
+                    if (x === 0) {
+                        ctx.moveTo(x, liquidScreenY + wave);
+                    } else {
+                        ctx.lineTo(x, liquidScreenY + wave);
+                    }
+                }
+                ctx.stroke();
+            }
+
+            // Jugador
+            const playerScreenY = player.y - cameraY;
+            if (imagesLoaded && images.squid.complete) {
+                // Dibujar imagen del calamar
+                ctx.drawImage(
+                    images.squid,
+                    player.x - player.width/2,
+                    playerScreenY - player.height/2,
+                    player.width,
+                    player.height
+                );
+            } else {
+                // Fallback gráfico si la imagen no carga
+                ctx.fillStyle = '#00ff88';
+                ctx.beginPath();
+                ctx.arc(player.x, playerScreenY, player.width/2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Game over
+        function gameOver() {
+            gameRunning = false;
+            finalScore.textContent = score + " m";
+            gameOverScreen.classList.remove('hidden');
+        }
+
+        // Bucle principal del juego
+        function gameLoop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const deltaTime = (timestamp - lastTime) / 16;
+            lastTime = timestamp;
+
+            update(deltaTime);
+            draw();
+            
+            if (gameRunning) {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        // Iniciar juego
+        function startGame() {
+            gameRunning = true;
+            lastTime = 0;
+            initGame();
+            startScreen.classList.add('hidden');
+            gameOverScreen.classList.add('hidden');
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Volver al menú
+        function goToMenu() {
+            gameOverScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+        }
+
+        // Controles
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', startGame);
+        menuBtn.addEventListener('click', goToMenu);
+        langBtn.addEventListener('click', changeLanguage);
+
+        window.addEventListener('keydown', (e) => {
+            if (!gameRunning) return;
+            if (e.key === 'ArrowLeft' || e.key === 'a') player.vx = -PLAYER_SPEED;
+            if (e.key === 'ArrowRight' || e.key === 'd') player.vx = PLAYER_SPEED;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'ArrowRight' || e.key === 'd') {
+                player.vx = 0;
+            }
+        });
+
+        // Iniciar con espacio
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !gameRunning && !startScreen.classList.contains('hidden')) {
+                startGame();
+            }
+        });
+
+        // Inicialización
+        initGame();
+        draw();
+    </script>
+</body>
+</html>
