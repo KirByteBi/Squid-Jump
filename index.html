@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <link rel="icon" type="image/png" href="img/SJicon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Squid Jump</title>
+    <link rel="icon" type="image/png" href="SJicon.png">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
         body { 
@@ -116,7 +116,7 @@
         <div id="hud">0 m</div>
         
         <div id="startScreen" class="screen">
-            <img src="img/SJicon.png" alt="Squid Jump" class="game-icon">
+            <img src="SJicon.png" alt="Squid Jump" class="game-icon">
             <h1 data-en="🦑 SQUID JUMP" data-es="🦑 SQUID JUMP">🦑 SQUID JUMP</h1>
             <p data-en="Jump from platform to platform" data-es="Salta de plataforma en plataforma">Jump from platform to platform</p>
             <p data-en="Avoid the rising ink!" data-es="¡Evita que la tinta te alcance!">Avoid the rising ink!</p>
@@ -179,16 +179,16 @@
         const PLAYER_SPEED = 5;
         const LIQUID_SPEED = 2;
 
-        // Cargar imágenes
+        // Cargar imágenes DESDE LA MISMA CARPETA
         const images = {
             squid: new Image(),
             platform: new Image(),
             icon: new Image()
         };
 
-        images.squid.src = "img/Squid.png";
-        images.platform.src = "img/platform.png";
-        images.icon.src = "img/SJicon.png";
+        images.squid.src = "Squid.png";
+        images.platform.src = "platform.png";
+        images.icon.src = "SJicon.png";
 
         // Verificar carga de imágenes
         let loadedCount = 0;
@@ -198,15 +198,16 @@
                 if (loadedCount === Object.keys(images).length) {
                     imagesLoaded = true;
                     console.log("Todas las imágenes cargadas");
-                    draw(); // Redibujar con las imágenes
+                    draw();
                 }
             };
             img.onerror = () => {
                 console.log("Error cargando imagen:", img.src);
                 loadedCount++;
+                // Continuar aunque falle alguna imagen
                 if (loadedCount === Object.keys(images).length) {
                     imagesLoaded = true;
-                    draw(); // Redibujar aunque falle alguna imagen
+                    draw();
                 }
             };
         });
@@ -215,12 +216,10 @@
         function changeLanguage() {
             currentLanguage = currentLanguage === 'en' ? 'es' : 'en';
             
-            // Actualizar todos los textos
             document.querySelectorAll('[data-en]').forEach(element => {
                 element.textContent = element.getAttribute(`data-${currentLanguage}`);
             });
             
-            // Actualizar botón de idioma
             langBtn.textContent = currentLanguage === 'en' ? 'ES' : 'EN';
         }
 
@@ -340,7 +339,7 @@
                             platform.height
                         );
                     } else {
-                        // Fallback gráfico si la imagen no carga
+                        // Fallback gráfico
                         ctx.fillStyle = '#6b8b59';
                         ctx.fillRect(
                             platform.x - platform.width/2,
@@ -352,7 +351,7 @@
                 }
             });
 
-            // Líquido
+            // Líquido (gráfico)
             const liquidScreenY = liquidY - cameraY;
             if (liquidScreenY < canvas.height) {
                 const gradient = ctx.createLinearGradient(0, liquidScreenY, 0, canvas.height);
@@ -361,7 +360,7 @@
                 ctx.fillStyle = gradient;
                 ctx.fillRect(0, liquidScreenY, canvas.width, canvas.height - liquidScreenY);
                 
-                // Efecto de onda en la superficie
+                // Efecto de onda
                 ctx.strokeStyle = '#00ff66';
                 ctx.lineWidth = 2;
                 ctx.beginPath();
@@ -388,7 +387,7 @@
                     player.height
                 );
             } else {
-                // Fallback gráfico si la imagen no carga
+                // Fallback gráfico
                 ctx.fillStyle = '#00ff88';
                 ctx.beginPath();
                 ctx.arc(player.x, playerScreenY, player.width/2, 0, Math.PI * 2);
